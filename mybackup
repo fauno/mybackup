@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# IMPORTANTE hay que tener un .my.cnf con credenciales para backup
+# [client]
+# user=backup
+# password=
+# host=localhost ; o el host remoto
+
+# Crear un repositorio si no existe
+test ! -d .git && git init
+
+# Recorrer todas las bases de datos
+echo "show databases;" | mysql | tail -n+2 | while read _database; do
+# La estructura va a ser base_de_datos/tabla.mysql
+  mkdir -p "${_database}"
+
+# Recorrer todas las tablas
+  printf "show tables from %s;\n" "${_database}" | \
+    mysql | tail -n+2 | while read _table; do
+
+      _backup="${_database}/${_table}.mysql"
+
+# Dump completo de la tabla
+# No importa pisar los cambios porque los vamos a commitear
+# NOTA si tenemos tablas grandes el cuello de botella va a estar acá
+      mysqldump "${_database}" "${_table}" >"${_backup}"
+
+# Agregar el archivo
+      git add "${_backup}"
+# Y comitearlo con fecha y tamaño
+      git commit "${_backup}" \
+                 -m "${_database}.${_table} @ $(date) $(du -h "${_backup}" | cut -f1)"
+  done
+done
+
+# Hacer un poco de limpieza
+git gc
+
+# Pushear si tenemos remotes
+_branch="$(git rev-parse --abbrev-ref HEAD)"
+git remote | while read _remote; do
+  git push ${_remote} ${_branch}
+done
