@@ -22,7 +22,12 @@ echo "show databases;" | mysql | tail -n+2 | while read _database; do
 # Dump completo de la tabla
 # No importa pisar los cambios porque los vamos a commitear
 # NOTA si tenemos tablas grandes el cuello de botella va a estar acá
-      mysqldump "${_database}" "${_table}" >"${_backup}"
+#
+# mysqldump(1) recomienda estas flags para tablas grandes
+      mysqldump --flush-privileges \
+                --single-transaction \
+                --quick \
+                "${_database}" "${_table}" >"${_backup}"
 
 # Agregar el archivo
       git add "${_backup}"
