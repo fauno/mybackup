@@ -45,14 +45,14 @@ echo "show databases;" | mysql | tail -n+2 | while read _database; do
 #     git add "${_database}/${_table}."*
 #     git commit -a -m "etc..."
       git add "${_backup}"
-# Y comitearlo con fecha y tamaño
+# Y comitearlo con tamaño
       git commit "${_backup}" \
                  -m "${_database}.${_table} @ $(du -h "${_backup}" | cut -f1)"
   done
 done
 
 # Hacer un poco de limpieza
-git gc
+git gc --auto
 
 # Pushear si tenemos remotes
 _branch="$(git rev-parse --abbrev-ref HEAD)"
