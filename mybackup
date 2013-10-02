@@ -35,6 +35,7 @@ echo "show databases;" | mysql | tail -n+2 | while read _database; do
 # mysqldump(1) recomienda estas flags para tablas grandes
       mysqldump --flush-privileges \
                 --single-transaction \
+                --events \
                 --quick \
                 "${_database}" "${_table}" | \
 # Un registro por línea para que git no tenga que reescribir todo el archivo cada vez
