@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+# Crear un repositorio si no existe
+test ! -d .git && git init
+
+# Recorrer todas las bases de datos
+echo "\t\l" | psql | tail -n +2 | tr -d " " \
+| cut -d "|" -f1 \
+| sed "/^$/d" \
+| while read _database; do
+# La estructura va a ser base_de_datos/tabla.mysql
+  mkdir -p "${_database}"
+
+# Recorrer todas las tablas
+  echo "\t\d" | psql "${_database}" \
+  | tail -n +2 \
+  | tr -d " " \
+  | cut -d "|" -f 2 \
+  | sed "/^$/d" \
+  | while read _table; do
+
+      _backup="${_database}/${_table}.psql"
+
+      pg_dump --table="${_table}" "${_database}" >"${_backup}"
+
+      git add "${_backup}"
+# Y comitearlo con tamaño
+      git commit "${_backup}" \
+                 -m "${_database}.${_table} @ $(du -h "${_backup}" | cut -f1)"
+  done
+done
+
+# Hacer un poco de limpieza
+git gc --auto
+
+# Pushear si tenemos remotes
+_branch="$(git rev-parse --abbrev-ref HEAD)"
+git remote | while read _remote; do
+  git push ${_remote} ${_branch}
+done
