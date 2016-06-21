@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # Crear un repositorio si no existe
 test ! -d .git && git init
@@ -18,15 +19,18 @@ echo "\t\l" | psql | tail -n +2 | tr -d " " \
   | cut -d "|" -f 2 \
   | sed "/^$/d" \
   | while read _table; do
+    test "${_table}" = "Norelationsfound." && continue
 
       _backup="${_database}/${_table}.psql"
 
       pg_dump --table="${_table}" "${_database}" >"${_backup}"
 
-      git add "${_backup}"
+      if git status --porcelain | grep -q " ${_backup}$"; then
+        git add "${_backup}"
 # Y comitearlo con tamaño
-      git commit "${_backup}" \
-                 -m "${_database}.${_table} @ $(du -h "${_backup}" | cut -f1)"
+        git commit "${_backup}" \
+                  -m "${_database}.${_table} @ $(du -h "${_backup}" | cut -f1)"
+      fi
   done
 done
 
@@ -38,3 +42,5 @@ _branch="$(git rev-parse --abbrev-ref HEAD)"
 git remote | while read _remote; do
   git push ${_remote} ${_branch}
 done
+
+exit 0

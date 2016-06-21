@@ -4,6 +4,7 @@
 # user=backup
 # password=
 # host=localhost ; o el host remoto
+set -e
 
 # Crear un repositorio si no existe
 test ! -d .git && git init
@@ -41,14 +42,16 @@ echo "show databases;" | mysql | tail -n+2 | while read _database; do
 # Un registro por línea para que git no tenga que reescribir todo el archivo cada vez
                 sed "s/),(/),\n(/g" >"${_backup}"
 
+      if git status --porcelain | grep -q " ${_backup}$"; then
 # Agregar el archivo
 # TODO ver --tab
 #     git add "${_database}/${_table}."*
 #     git commit -a -m "etc..."
-      git add "${_backup}"
+        git add "${_backup}"
 # Y comitearlo con tamaño
-      git commit "${_backup}" \
-                 -m "${_database}.${_table} @ $(du -h "${_backup}" | cut -f1)"
+        git commit "${_backup}" \
+                  -m "${_database}.${_table} @ $(du -h "${_backup}" | cut -f1)"
+      fi
   done
 done
 
